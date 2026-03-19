@@ -16,7 +16,7 @@ export default function Index() {
 
       <View style={styles.heroContainer}>
         <Video
-          source={{ uri: "https://matchwinner.com/cdn/shop/videos/c/vp/ac955e2412224c4c85f13fbff930d97c/ac955e2412224c4c85f13fbff930d97c.HD-1080p-7.2Mbps-64276434.mp4?v=0" }}
+          source={{ uri: "https://cdn.pixabay.com/video/2024/03/22/205193-926528071_large.mp4" }}
           style={styles.heroVideo}
           resizeMode={ResizeMode.COVER}
           shouldPlay
