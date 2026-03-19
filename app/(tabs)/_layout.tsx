@@ -44,6 +44,15 @@ export default function TabLayout() {
             ),
             }}
         />
+        <Tabs.Screen
+            name="login"
+            options={{
+            title: 'Login',
+            tabBarIcon: ({ color, focused }) => (
+                <Ionicons name={focused ? 'log-in' : 'log-in-outline'} color={color} size={24}/>
+            ),
+            }}
+        />
     </Tabs>
   );
 }
