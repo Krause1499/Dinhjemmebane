@@ -1,125 +1,420 @@
-import React, { useState } from "react";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { router } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Pressable,
-    StatusBar,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    View
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "../../context/AuthContext";
+import { Colors, Fonts, Radius, Spacing } from "../../theme";
 
-export default function LoginScreen() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [remember, setRemember] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
+const API = "https://dinhjemmebaneapi.runasp.net/api";
 
-  const API_URL = "https://dinhjemmebaneapi.runasp.net/api/securewebsite/login";
+// ─── Typer ───────────────────────────────────────────────────────────────────
 
-  async function handleSubmit() {
-    setErrorMessage("");
+type OrderItem = {
+  shirt?: { team: string; season: string; size: string };
+  mysteryBox?: { type: string; size: string };
+};
 
-    const loginDto = {
-      email,
-      password,
-      remember,
-    };
+type Order = {
+  id: number;
+  referenceId: string;
+  orderDate: string;
+  status: 1 | 2 | 3;
+  orderHandle: string;
+  orderItems: OrderItem[];
+  priceWithVAT: number;
+};
 
-    if (!email || !password) {
-      setErrorMessage("Udfyld både email og adgangskode.");
-      return;
-    }
+// ─── Hjælpefunktioner ────────────────────────────────────────────────────────
 
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("da-DK", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function itemLabel(item: OrderItem): string {
+  if (item.shirt) {
+    const s = item.shirt;
+    return `${s.team} ${s.season} · Str. ${s.size}`;
+  }
+  if (item.mysteryBox) {
+    return `Mystery Box — ${item.mysteryBox.type} (${item.mysteryBox.size})`;
+  }
+  return "Vare";
+}
+
+const STATUS_CONFIG: Record<number, { label: string; color: string; bg: string; border: string }> = {
+  1: { label: "Betaling modtaget", color: Colors.gold,      bg: Colors.goldDim,      border: "rgba(201,168,75,0.3)" },
+  2: { label: "Afsendt",           color: Colors.available, bg: Colors.availableBg,  border: Colors.availableBorder },
+  3: { label: "Afsluttet",         color: Colors.goldLight, bg: Colors.card,         border: Colors.line },
+};
+
+// ─── Min Konto ───────────────────────────────────────────────────────────────
+
+function MinKontoScreen() {
+  const { user, logout } = useAuth();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [tfaLoading, setTfaLoading] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
+
+  useEffect(() => {
+    fetch(`${API}/orders/my`, { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => { setOrders(data); setOrdersLoading(false); })
+      .catch(() => setOrdersLoading(false));
+
+    fetch(`${API}/securewebsite/2fa-status`, { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (data) setTwoFactorEnabled(data.twoFactorEnabled); })
+      .catch(() => {});
+  }, []);
+
+  async function handleToggle2FA() {
+    setTfaLoading(true);
     try {
-      setLoading(true);
-
-      const response = await fetch(API_URL, {
+      const res = await fetch(`${API}/securewebsite/toggle-2fa`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(loginDto),
+        credentials: "include",
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setErrorMessage(data.message || "Login fejlede.");
-        return;
+      if (res.ok) {
+        const data = await res.json();
+        setTwoFactorEnabled(data.twoFactorEnabled);
       }
-
-      Alert.alert("Succes", data.message || "Login gennemført.");
-    } catch (error) {
-      setErrorMessage("Kunne ikke kontakte serveren.");
-      console.error("Login error:", error);
     } finally {
-      setLoading(false);
+      setTfaLoading(false);
     }
   }
 
+  async function handleLogout() {
+    setLogoutLoading(true);
+    await logout();
+    setLogoutLoading(false);
+  }
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" />
+    <ScrollView style={styles.screen} contentContainerStyle={styles.accountContainer} showsVerticalScrollIndicator={false}>
 
-        <KeyboardAwareScrollView
-            contentContainerStyle={styles.scrollContent}
-            enableOnAndroid={true}
-            extraScrollHeight={20}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
+      {/* Header */}
+      <View style={styles.accountHeader}>
+        <View>
+          <Text style={styles.accountTitle}>Min konto</Text>
+          <Text style={styles.accountEmail}>{user?.email}</Text>
+        </View>
+        <Pressable
+          style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.7 }]}
+          onPress={handleLogout}
+          disabled={logoutLoading}
         >
-          <View style={styles.page}>
-            <View style={styles.card}>
-              <View style={styles.panel}>
-                <View style={styles.logoRow}>
-                  <View style={styles.logoCircle}>
-                    <Text style={styles.logoMark}>DH</Text>
-                  </View>
-                  <Text style={styles.logoText}>Din Hjemmebane</Text>
-                </View>
+          {logoutLoading
+            ? <ActivityIndicator size="small" color={Colors.soldOut} />
+            : <>
+                <Ionicons name="log-out-outline" size={16} color={Colors.soldOut} />
+                <Text style={styles.logoutText}>Log ud</Text>
+              </>
+          }
+        </Pressable>
+      </View>
 
-                <Text style={styles.panelHeading}>Log ind på din konto</Text>
-                <Text style={styles.panelSub}>
-                  Få adgang til din ordrehistorik og en hurtigere checkout.
-                </Text>
+      {/* Ordrer */}
+      <Text style={styles.sectionLabel}>
+        {ordersLoading ? "Henter ordrer…" : `${orders.length} ordre${orders.length !== 1 ? "r" : ""}`}
+      </Text>
 
-                <View style={styles.perks}>
-                  <View style={styles.perkItem}>
-                    <View style={styles.perkDot} />
-                    <Text style={styles.perkText}>
-                      Se alle dine ordrer samlet
-                    </Text>
-                  </View>
+      {ordersLoading && (
+        <>
+          <OrderSkeleton />
+          <OrderSkeleton />
+        </>
+      )}
 
-                  <View style={styles.perkItem}>
-                    <View style={styles.perkDot} />
-                    <Text style={styles.perkText}>
-                      Hurtigere checkout næste gang
-                    </Text>
-                  </View>
+      {!ordersLoading && orders.length === 0 && (
+        <View style={styles.emptyBox}>
+          <Ionicons name="bag-outline" size={36} color={Colors.muted} />
+          <Text style={styles.emptyTitle}>Ingen ordrer endnu</Text>
+          <Text style={styles.emptyText}>
+            Du har ikke lagt nogen ordrer ind. Find din næste trøje herunder.
+          </Text>
+          <Pressable
+            style={({ pressed }) => [styles.emptyBtn, pressed && { opacity: 0.8 }]}
+            onPress={() => router.push("/shirts")}
+          >
+            <Text style={styles.emptyBtnText}>Se trøjer →</Text>
+          </Pressable>
+        </View>
+      )}
 
-                  <View style={styles.perkItem}>
-                    <View style={styles.perkDot} />
-                    <Text style={styles.perkText}>
-                      Sikker og krypteret forbindelse
-                    </Text>
-                  </View>
-                </View>
+      {!ordersLoading && orders.map((order) => {
+        const cfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG[3];
+        const preview = order.orderItems?.slice(0, 2) ?? [];
+        const extra = (order.orderItems?.length ?? 0) - preview.length;
+
+        return (
+          <View key={order.id} style={styles.orderCard}>
+            <View style={styles.orderCardTop}>
+              <View>
+                <Text style={styles.orderRef}>#{order.referenceId}</Text>
+                <Text style={styles.orderDate}>{formatDate(order.orderDate)}</Text>
               </View>
+              <View style={[styles.statusBadge, { backgroundColor: cfg.bg, borderColor: cfg.border }]}>
+                <View style={[styles.statusDot, { backgroundColor: cfg.color }]} />
+                <Text style={[styles.statusLabel, { color: cfg.color }]}>{cfg.label}</Text>
+              </View>
+            </View>
 
-              <View style={styles.form}>
-                <Text style={styles.title}>Velkommen tilbage</Text>
-                <Text style={styles.sub}>Log ind for at fortsætte</Text>
+            <View style={styles.orderCardBody}>
+              <View style={styles.orderItems}>
+                {preview.map((item, i) => (
+                  <Text key={i} style={styles.orderItemLine}>{itemLabel(item)}</Text>
+                ))}
+                {extra > 0 && (
+                  <Text style={styles.orderItemMore}>+ {extra} vare{extra > 1 ? "r" : ""} mere</Text>
+                )}
+              </View>
+              <Text style={styles.orderTotal}>
+                {order.priceWithVAT?.toLocaleString("da-DK", { maximumFractionDigits: 0 })} kr.
+              </Text>
+            </View>
+          </View>
+        );
+      })}
 
-                {!!errorMessage && (
+      {/* Sikkerhed */}
+      <Text style={[styles.sectionLabel, { marginTop: 32 }]}>Sikkerhed</Text>
+      <View style={styles.securityCard}>
+        <View style={styles.securityIcon}>
+          <Ionicons name="shield-checkmark-outline" size={20} color={Colors.gold} />
+        </View>
+        <View style={styles.securityBody}>
+          <View style={styles.securityTitleRow}>
+            <Text style={styles.securityTitle}>To-faktor godkendelse</Text>
+            <View style={[
+              styles.tfaBadge,
+              twoFactorEnabled ? styles.tfaBadgeOn : styles.tfaBadgeOff,
+            ]}>
+              <View style={[styles.tfaDot, { backgroundColor: twoFactorEnabled ? Colors.available : Colors.muted }]} />
+              <Text style={[styles.tfaLabel, { color: twoFactorEnabled ? Colors.available : Colors.muted }]}>
+                {twoFactorEnabled ? "Aktiv" : "Ikke aktiv"}
+              </Text>
+            </View>
+          </View>
+          <Text style={styles.securitySub}>
+            {twoFactorEnabled
+              ? "Dit login bekræftes med en kode sendt til din email."
+              : "Dit login kræver kun adgangskode."}
+          </Text>
+        </View>
+        <Pressable
+          style={({ pressed }) => [
+            styles.tfaToggleBtn,
+            twoFactorEnabled ? styles.tfaToggleOn : styles.tfaToggleOff,
+            pressed && { opacity: 0.8 },
+          ]}
+          onPress={handleToggle2FA}
+          disabled={tfaLoading}
+        >
+          {tfaLoading
+            ? <ActivityIndicator size="small" color={Colors.goldLight} />
+            : <Text style={styles.tfaToggleText}>{twoFactorEnabled ? "Slå fra" : "Slå til"}</Text>
+          }
+        </Pressable>
+      </View>
+
+    </ScrollView>
+  );
+}
+
+function OrderSkeleton() {
+  return (
+    <View style={[styles.orderCard, styles.skeletonCard]}>
+      <View style={styles.skeletonLine} />
+      <View style={[styles.skeletonLine, { width: "60%", marginTop: 8 }]} />
+    </View>
+  );
+}
+
+// ─── Login/OTP skærme ────────────────────────────────────────────────────────
+
+export default function AccountTab() {
+  const { user, loading, login, verifyOtp, resendConfirmation } = useAuth();
+
+  // Login-trin
+  const [step, setStep] = useState<"password" | "otp">("password");
+  const [otpToken, setOtpToken] = useState("");
+  const otpRef = useRef<TextInput>(null);
+
+  // Formfelter
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+
+  // UI-tilstand
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [resendEmail, setResendEmail] = useState("");
+  const [resendCountdown, setResendCountdown] = useState(0);
+  const [resendStatus, setResendStatus] = useState("");
+
+  // Nedtæller for gensend
+  function startCountdown(seconds: number) {
+    setResendCountdown(seconds);
+    const interval = setInterval(() => {
+      setResendCountdown((prev) => {
+        if (prev <= 1) { clearInterval(interval); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  }
+
+  async function handleLogin() {
+    if (!email || !password) { setError("Udfyld både email og adgangskode."); return; }
+    setError(""); setSuccessMsg(""); setNeedsConfirmation(false);
+    setSubmitting(true);
+
+    const result = await login(email, password, remember);
+    setSubmitting(false);
+
+    if ("ok" in result) return; // Logget ind — state opdateres via context
+
+    if ("otp" in result) {
+      setOtpToken(result.otpToken);
+      setStep("otp");
+      setTimeout(() => otpRef.current?.focus(), 300);
+      return;
+    }
+
+    if ("needsConfirmation" in result) {
+      setNeedsConfirmation(true);
+      setResendEmail(result.email);
+      setError("Din email er ikke bekræftet.");
+      return;
+    }
+
+    setError(result.error);
+  }
+
+  async function handleOtp() {
+    if (!otpCode) { setError("Indtast sikkerhedskoden."); return; }
+    setError(""); setSubmitting(true);
+
+    const result = await verifyOtp(otpToken, otpCode);
+    setSubmitting(false);
+
+    if ("ok" in result) return;
+
+    if ("tooManyAttempts" in result) {
+      setStep("password");
+      setOtpToken("");
+      setOtpCode("");
+      setError("For mange forkerte forsøg. Prøv at logge ind igen.");
+      return;
+    }
+
+    setError(result.error);
+  }
+
+  async function handleResend() {
+    const result = await resendConfirmation(resendEmail);
+    if ("cooldown" in result) { startCountdown(result.cooldown); return; }
+    if ("ok" in result) { setResendStatus("Et nyt bekræftelseslink er sendt."); startCountdown(120); }
+  }
+
+  // Mens AsyncStorage loader
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={Colors.gold} />
+      </View>
+    );
+  }
+
+  // Logget ind → vis min konto
+  if (user) return <MinKontoScreen />;
+
+  // ─── Login-formular ───────────────────────────────────────────────────────
+
+  return (
+    <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
+      <StatusBar barStyle="light-content" />
+
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scrollContent}
+        enableOnAndroid
+        extraScrollHeight={20}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.page}>
+
+          {/* Panel */}
+          <View style={styles.panel}>
+            <View style={styles.logoRow}>
+              <View style={styles.logoCircle}>
+                <Text style={styles.logoMark}>DH</Text>
+              </View>
+              <Text style={styles.logoText}>Din Hjemmebane</Text>
+            </View>
+            <Text style={styles.panelHeading}>
+              {step === "password" ? "Log ind på din konto" : "Bekræft din identitet"}
+            </Text>
+            <Text style={styles.panelSub}>
+              {step === "password"
+                ? "Få adgang til din ordrehistorik og en hurtigere checkout."
+                : "Vi har sendt en engangskode til din email."}
+            </Text>
+            <View style={styles.perks}>
+              {["Se alle dine ordrer samlet", "Hurtigere checkout næste gang", "Sikker og krypteret forbindelse"].map((p) => (
+                <View key={p} style={styles.perkItem}>
+                  <View style={styles.perkDot} />
+                  <Text style={styles.perkText}>{p}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Form */}
+          <View style={styles.form}>
+
+            {step === "password" ? (
+              <>
+                <Text style={styles.formTitle}>Velkommen tilbage</Text>
+                <Text style={styles.formSub}>Log ind for at fortsætte</Text>
+
+                {!!error && (
                   <View style={styles.errorBox}>
-                    <Text style={styles.errorText}>{errorMessage}</Text>
+                    <Text style={styles.errorText}>{error}</Text>
+                    {needsConfirmation && (
+                      <Pressable
+                        onPress={handleResend}
+                        disabled={resendCountdown > 0}
+                        style={{ marginTop: 8 }}
+                      >
+                        <Text style={styles.resendLink}>
+                          {resendCountdown > 0
+                            ? `Gensend om ${resendCountdown}s`
+                            : "Gensend bekræftelsesemail"}
+                        </Text>
+                      </Pressable>
+                    )}
+                    {!!resendStatus && <Text style={styles.resendSuccess}>{resendStatus}</Text>}
                   </View>
                 )}
 
@@ -129,10 +424,11 @@ export default function LoginScreen() {
                     value={email}
                     onChangeText={setEmail}
                     placeholder="din@email.dk"
-                    placeholderTextColor="#94A3B8"
+                    placeholderTextColor={Colors.muted}
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoCorrect={false}
+                    returnKeyType="next"
                     style={styles.input}
                   />
                 </View>
@@ -143,55 +439,415 @@ export default function LoginScreen() {
                     value={password}
                     onChangeText={setPassword}
                     placeholder="Indtast din adgangskode"
-                    placeholderTextColor="#94A3B8"
+                    placeholderTextColor={Colors.muted}
                     secureTextEntry
                     autoCapitalize="none"
                     autoCorrect={false}
+                    returnKeyType="done"
+                    onSubmitEditing={handleLogin}
                     style={styles.input}
                   />
                 </View>
 
                 <View style={styles.rememberRow}>
                   <Text style={styles.rememberText}>Husk mig</Text>
-                  <Switch value={remember} onValueChange={setRemember} />
+                  <Switch
+                    value={remember}
+                    onValueChange={setRemember}
+                    trackColor={{ false: Colors.bgAlt, true: Colors.navyBtn }}
+                    thumbColor={remember ? Colors.gold : Colors.muted}
+                  />
                 </View>
 
                 <Pressable
-                  style={({ pressed }) => [
-                    styles.submitButton,
-                    pressed && styles.submitButtonPressed,
-                    loading && styles.submitButtonDisabled,
-                  ]}
-                  onPress={handleSubmit}
-                  disabled={loading}
+                  style={({ pressed }) => [styles.submitBtn, pressed && { opacity: 0.85 }, submitting && styles.submitBtnDisabled]}
+                  onPress={handleLogin}
+                  disabled={submitting}
                 >
-                  {loading ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.submitButtonText}>Log ind</Text>
-                  )}
+                  {submitting
+                    ? <ActivityIndicator color={Colors.goldLight} />
+                    : <Text style={styles.submitBtnText}>Log ind</Text>
+                  }
                 </Pressable>
 
                 <Text style={styles.footer}>
                   Har du ikke en konto?{" "}
-                  <Text style={styles.footerLink}>Opret konto</Text>
+                  <Text style={styles.footerLink} onPress={() => router.push("/register")}>
+                    Opret konto
+                  </Text>
                 </Text>
-              </View>
-            </View>
+              </>
+            ) : (
+              <>
+                <Text style={styles.formTitle}>Bekræft</Text>
+                <Text style={styles.formSub}>Vi har sendt en 6-cifret kode til din email.</Text>
+
+                {!!error && (
+                  <View style={styles.errorBox}>
+                    <Text style={styles.errorText}>{error}</Text>
+                  </View>
+                )}
+
+                <View style={styles.field}>
+                  <Text style={styles.label}>Sikkerhedskode</Text>
+                  <TextInput
+                    ref={otpRef}
+                    value={otpCode}
+                    onChangeText={setOtpCode}
+                    placeholder="6-cifret kode"
+                    placeholderTextColor={Colors.muted}
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    returnKeyType="done"
+                    onSubmitEditing={handleOtp}
+                    style={[styles.input, styles.otpInput]}
+                  />
+                  <Text style={styles.otpHint}>Tjek evt. din spam-mappe</Text>
+                </View>
+
+                <Pressable
+                  style={({ pressed }) => [styles.submitBtn, pressed && { opacity: 0.85 }, submitting && styles.submitBtnDisabled]}
+                  onPress={handleOtp}
+                  disabled={submitting}
+                >
+                  {submitting
+                    ? <ActivityIndicator color={Colors.goldLight} />
+                    : <Text style={styles.submitBtnText}>Bekræft kode</Text>
+                  }
+                </Pressable>
+
+                <Pressable
+                  style={{ alignItems: "center", marginTop: Spacing.md }}
+                  onPress={() => { setStep("password"); setOtpToken(""); setOtpCode(""); setError(""); }}
+                >
+                  <Text style={styles.backLink}>← Tilbage til login</Text>
+                </Pressable>
+              </>
+            )}
+
           </View>
-        </KeyboardAwareScrollView>
+        </View>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
 
+// ─── Styles ──────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-  safeArea: {
+  centered: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: Colors.bg,
+    justifyContent: "center",
+    alignItems: "center",
   },
 
-  keyboardWrapper: {
+  // Min konto
+  screen: {
     flex: 1,
+    backgroundColor: Colors.bg,
+  },
+
+  accountContainer: {
+    padding: Spacing.lg,
+    paddingBottom: 40,
+  },
+
+  accountHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: Spacing.xl,
+    paddingTop: Spacing.sm,
+  },
+
+  accountTitle: {
+    color: Colors.goldLight,
+    fontSize: 38,
+    fontFamily: Fonts.display,
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+
+  accountEmail: {
+    color: Colors.muted,
+    fontSize: 14,
+    fontFamily: Fonts.body,
+  },
+
+  logoutBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: Colors.soldOutBg,
+    borderWidth: 1,
+    borderColor: Colors.soldOutBorder,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Radius.lg,
+  },
+
+  logoutText: {
+    color: Colors.soldOut,
+    fontSize: 13,
+    fontFamily: Fonts.bodyBold,
+  },
+
+  sectionLabel: {
+    color: Colors.muted,
+    fontSize: 10,
+    fontFamily: Fonts.bodyBold,
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+    marginBottom: Spacing.md,
+  },
+
+  orderCard: {
+    backgroundColor: Colors.card,
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: Colors.line,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
+
+  orderCardTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    paddingBottom: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.line,
+    marginBottom: Spacing.md,
+  },
+
+  orderRef: {
+    color: Colors.goldLight,
+    fontSize: 15,
+    fontFamily: Fonts.bodyBold,
+    marginBottom: 4,
+  },
+
+  orderDate: {
+    color: Colors.muted,
+    fontSize: 12,
+    fontFamily: Fonts.body,
+  },
+
+  statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+  },
+
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: Radius.full,
+  },
+
+  statusLabel: {
+    fontSize: 11,
+    fontFamily: Fonts.bodyBold,
+  },
+
+  orderCardBody: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+  },
+
+  orderItems: {
+    flex: 1,
+    gap: 4,
+  },
+
+  orderItemLine: {
+    color: Colors.mutedStrong,
+    fontSize: 13,
+    fontFamily: Fonts.body,
+  },
+
+  orderItemMore: {
+    color: Colors.muted,
+    fontSize: 12,
+    fontFamily: Fonts.body,
+  },
+
+  orderTotal: {
+    color: Colors.goldLight,
+    fontSize: 20,
+    fontFamily: Fonts.display,
+    letterSpacing: 0.5,
+    marginLeft: Spacing.md,
+  },
+
+  skeletonCard: {
+    opacity: 0.5,
+  },
+
+  skeletonLine: {
+    height: 14,
+    width: "80%",
+    backgroundColor: Colors.bgAlt,
+    borderRadius: Radius.sm,
+  },
+
+  emptyBox: {
+    backgroundColor: Colors.card,
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: Colors.line,
+    padding: Spacing.xxl,
+    alignItems: "center",
+    gap: Spacing.md,
+    marginBottom: Spacing.xl,
+  },
+
+  emptyTitle: {
+    color: Colors.text,
+    fontSize: 18,
+    fontFamily: Fonts.bodyBold,
+  },
+
+  emptyText: {
+    color: Colors.muted,
+    fontSize: 14,
+    fontFamily: Fonts.body,
+    textAlign: "center",
+    lineHeight: 21,
+  },
+
+  emptyBtn: {
+    backgroundColor: Colors.navyBtn,
+    borderWidth: 1,
+    borderColor: Colors.lineMid,
+    paddingHorizontal: 20,
+    paddingVertical: 11,
+    borderRadius: Radius.lg,
+    marginTop: Spacing.sm,
+  },
+
+  emptyBtnText: {
+    color: Colors.goldLight,
+    fontSize: 13,
+    fontFamily: Fonts.bodyBold,
+  },
+
+  securityCard: {
+    backgroundColor: Colors.card,
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: Colors.line,
+    padding: Spacing.lg,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+  },
+
+  securityIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.goldDim,
+    borderWidth: 1,
+    borderColor: "rgba(201,168,75,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+
+  securityBody: {
+    flex: 1,
+  },
+
+  securityTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 4,
+  },
+
+  securityTitle: {
+    color: Colors.text,
+    fontSize: 14,
+    fontFamily: Fonts.bodyBold,
+  },
+
+  tfaBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+  },
+
+  tfaBadgeOn: {
+    backgroundColor: Colors.availableBg,
+    borderColor: Colors.availableBorder,
+  },
+
+  tfaBadgeOff: {
+    backgroundColor: Colors.bgAlt,
+    borderColor: Colors.line,
+  },
+
+  tfaDot: {
+    width: 5,
+    height: 5,
+    borderRadius: Radius.full,
+  },
+
+  tfaLabel: {
+    fontSize: 10,
+    fontFamily: Fonts.bodyBold,
+    letterSpacing: 0.3,
+  },
+
+  securitySub: {
+    color: Colors.muted,
+    fontSize: 12,
+    fontFamily: Fonts.body,
+    lineHeight: 18,
+  },
+
+  tfaToggleBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    flexShrink: 0,
+    minWidth: 64,
+    alignItems: "center",
+  },
+
+  tfaToggleOn: {
+    backgroundColor: Colors.soldOutBg,
+    borderColor: Colors.soldOutBorder,
+  },
+
+  tfaToggleOff: {
+    backgroundColor: Colors.navyBtn,
+    borderColor: Colors.lineMid,
+  },
+
+  tfaToggleText: {
+    color: Colors.goldLight,
+    fontSize: 12,
+    fontFamily: Fonts.bodyBold,
+  },
+
+  // Login
+  safeArea: {
+    flex: 1,
+    backgroundColor: Colors.bg,
   },
 
   scrollContent: {
@@ -201,71 +857,70 @@ const styles = StyleSheet.create({
   page: {
     flexGrow: 1,
     justifyContent: "center",
-    padding: 20,
-  },
-
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 24,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 6,
+    padding: Spacing.xl,
   },
 
   panel: {
-    backgroundColor: "#0F172A",
-    paddingHorizontal: 24,
-    paddingVertical: 28,
+    backgroundColor: Colors.headerBg,
+    borderTopLeftRadius: Radius.xxl,
+    borderTopRightRadius: Radius.xxl,
+    paddingHorizontal: Spacing.xxl,
+    paddingVertical: Spacing.xxl,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: Colors.lineMid,
   },
 
   logoRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: Spacing.xxl,
   },
 
   logoCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "#1E293B",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.navyBtn,
+    borderWidth: 1,
+    borderColor: Colors.lineMid,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
+    marginRight: Spacing.md,
   },
 
   logoMark: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "800",
+    color: Colors.goldLight,
+    fontSize: 13,
+    fontFamily: Fonts.bodyExtraBold,
+    letterSpacing: 1,
   },
 
   logoText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "700",
+    color: Colors.goldLight,
+    fontSize: 17,
+    fontFamily: Fonts.bodyBold,
+    letterSpacing: 0.3,
   },
 
   panelHeading: {
-    color: "#FFFFFF",
-    fontSize: 26,
-    fontWeight: "800",
-    lineHeight: 32,
+    color: Colors.goldLight,
+    fontSize: 32,
+    fontFamily: Fonts.display,
+    letterSpacing: 0.5,
     marginBottom: 8,
   },
 
   panelSub: {
-    color: "#CBD5E1",
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 24,
+    color: Colors.mutedStrong,
+    fontSize: 14,
+    fontFamily: Fonts.body,
+    lineHeight: 21,
+    marginBottom: Spacing.xl,
   },
 
   perks: {
-    gap: 12,
+    gap: Spacing.md,
   },
 
   perkItem: {
@@ -274,120 +929,165 @@ const styles = StyleSheet.create({
   },
 
   perkDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 999,
-    backgroundColor: "#38BDF8",
-    marginRight: 10,
+    width: 7,
+    height: 7,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.gold,
+    marginRight: Spacing.md,
   },
 
   perkText: {
-    color: "#E2E8F0",
+    color: Colors.text,
     fontSize: 14,
-    lineHeight: 20,
+    fontFamily: Fonts.body,
   },
 
   form: {
-    paddingHorizontal: 24,
-    paddingVertical: 28,
+    backgroundColor: Colors.card,
+    borderBottomLeftRadius: Radius.xxl,
+    borderBottomRightRadius: Radius.xxl,
+    paddingHorizontal: Spacing.xxl,
+    paddingVertical: Spacing.xxl,
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: Colors.lineMid,
   },
 
-  title: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: "#0F172A",
+  formTitle: {
+    fontSize: 26,
+    fontFamily: Fonts.display,
+    color: Colors.goldLight,
+    letterSpacing: 0.5,
     marginBottom: 6,
   },
 
-  sub: {
-    fontSize: 15,
-    color: "#64748B",
-    marginBottom: 20,
+  formSub: {
+    fontSize: 14,
+    fontFamily: Fonts.body,
+    color: Colors.muted,
+    marginBottom: Spacing.xl,
   },
 
   errorBox: {
-    backgroundColor: "#FEF2F2",
+    backgroundColor: Colors.soldOutBg,
     borderWidth: 1,
-    borderColor: "#FECACA",
+    borderColor: Colors.soldOutBorder,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    borderRadius: 14,
-    marginBottom: 16,
+    borderRadius: Radius.lg,
+    marginBottom: Spacing.lg,
   },
 
   errorText: {
-    color: "#B91C1C",
+    color: Colors.soldOut,
     fontSize: 14,
+    fontFamily: Fonts.body,
     lineHeight: 20,
   },
 
+  resendLink: {
+    color: Colors.gold,
+    fontSize: 13,
+    fontFamily: Fonts.bodyBold,
+    textDecorationLine: "underline",
+  },
+
+  resendSuccess: {
+    color: Colors.available,
+    fontSize: 12,
+    fontFamily: Fonts.body,
+    marginTop: 4,
+  },
+
   field: {
-    marginBottom: 16,
+    marginBottom: Spacing.lg,
   },
 
   label: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#334155",
+    fontSize: 11,
+    fontFamily: Fonts.bodyBold,
+    color: Colors.muted,
+    letterSpacing: 1,
+    textTransform: "uppercase",
     marginBottom: 8,
   },
 
   input: {
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    backgroundColor: "#F8FAFC",
-    borderRadius: 14,
-    paddingHorizontal: 16,
+    borderColor: Colors.line,
+    backgroundColor: Colors.bg,
+    borderRadius: Radius.lg,
+    paddingHorizontal: Spacing.lg,
     paddingVertical: 14,
     fontSize: 15,
-    color: "#0F172A",
+    fontFamily: Fonts.body,
+    color: Colors.text,
+  },
+
+  otpInput: {
+    fontSize: 22,
+    fontFamily: Fonts.bodyBold,
+    letterSpacing: 6,
+    textAlign: "center",
+  },
+
+  otpHint: {
+    color: Colors.muted,
+    fontSize: 12,
+    fontFamily: Fonts.body,
+    marginTop: 6,
   },
 
   rememberRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: 4,
-    marginBottom: 24,
+    marginBottom: Spacing.xxl,
   },
 
   rememberText: {
-    fontSize: 15,
-    color: "#334155",
-    fontWeight: "600",
+    fontSize: 14,
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.text,
   },
 
-  submitButton: {
-    backgroundColor: "#0F172A",
-    borderRadius: 14,
+  submitBtn: {
+    backgroundColor: Colors.navyBtn,
+    borderWidth: 1,
+    borderColor: Colors.lineMid,
+    borderRadius: Radius.lg,
     paddingVertical: 16,
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: Spacing.xl,
   },
 
-  submitButtonPressed: {
-    opacity: 0.9,
+  submitBtnDisabled: {
+    opacity: 0.6,
   },
 
-  submitButtonDisabled: {
-    opacity: 0.7,
-  },
-
-  submitButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700",
+  submitBtnText: {
+    color: Colors.goldLight,
+    fontSize: 15,
+    fontFamily: Fonts.bodyBold,
+    letterSpacing: 0.5,
   },
 
   footer: {
     textAlign: "center",
-    color: "#64748B",
+    color: Colors.muted,
     fontSize: 14,
-    lineHeight: 20,
+    fontFamily: Fonts.body,
   },
 
   footerLink: {
-    color: "#0F172A",
-    fontWeight: "700",
+    color: Colors.gold,
+    fontFamily: Fonts.bodyBold,
+  },
+
+  backLink: {
+    color: Colors.muted,
+    fontSize: 14,
+    fontFamily: Fonts.bodySemiBold,
+    textAlign: "center",
   },
 });

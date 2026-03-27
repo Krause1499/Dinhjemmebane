@@ -10,6 +10,7 @@ import {
     Text,
     View,
 } from "react-native";
+import { Colors, Fonts, Radius, Spacing } from "../../theme";
 
 type Shirt = {
   id: number;
@@ -65,7 +66,7 @@ export default function ShirtDetailsScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#fbbf24" />
+        <ActivityIndicator size="large" color={Colors.gold} />
         <Text style={styles.loadingText}>Henter trøje...</Text>
       </View>
     );
@@ -208,7 +209,10 @@ export default function ShirtDetailsScreen() {
           <Text style={styles.sectionTitle}>Status</Text>
 
           <View style={styles.statusCard}>
-            <View style={styles.statusPill}>
+            <View style={[
+              styles.statusPill,
+              shirt.isAvailable ? styles.statusPillAvailable : styles.statusPillSoldOut,
+            ]}>
               <Text style={styles.statusPillText}>
                 {shirt.isAvailable ? "Klar til køb" : "Midlertidigt utilgængelig"}
               </Text>
@@ -241,42 +245,43 @@ export default function ShirtDetailsScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#0f172a",
+    backgroundColor: Colors.bg,
   },
 
   container: {
-    padding: 16,
+    padding: Spacing.lg,
     paddingBottom: 32,
   },
 
   loadingContainer: {
     flex: 1,
-    backgroundColor: "#0f172a",
+    backgroundColor: Colors.bg,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: Spacing.xl,
   },
 
   loadingText: {
-    color: "#e5e7eb",
-    marginTop: 12,
+    color: Colors.text,
+    marginTop: Spacing.md,
     fontSize: 16,
+    fontFamily: Fonts.body,
   },
 
   heroCard: {
-    backgroundColor: "#111827",
-    borderRadius: 24,
+    backgroundColor: Colors.card,
+    borderRadius: Radius.xxl,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#1f2937",
-    marginBottom: 20,
+    borderColor: Colors.line,
+    marginBottom: Spacing.xl,
   },
 
   heroImage: {
     width: "100%",
     height: 300,
     resizeMode: "contain",
-    backgroundColor: "#0b1220",
+    backgroundColor: Colors.bgAlt,
   },
 
   imagePlaceholder: {
@@ -285,8 +290,9 @@ const styles = StyleSheet.create({
   },
 
   imagePlaceholderText: {
-    color: "#64748b",
+    color: Colors.muted,
     fontSize: 14,
+    fontFamily: Fonts.body,
   },
 
   heroContent: {
@@ -297,7 +303,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    gap: 12,
+    gap: Spacing.md,
     marginBottom: 14,
   },
 
@@ -306,117 +312,126 @@ const styles = StyleSheet.create({
   },
 
   team: {
-    color: "#ffffff",
-    fontSize: 28,
-    fontWeight: "800",
-    marginBottom: 4,
+    color: Colors.goldLight,
+    fontSize: 36,
+    fontFamily: Fonts.display,
+    letterSpacing: 1,
+    marginBottom: 2,
   },
 
   season: {
-    color: "#94a3b8",
-    fontSize: 16,
-    fontWeight: "600",
+    color: Colors.muted,
+    fontSize: 14,
+    fontFamily: Fonts.bodySemiBold,
+    letterSpacing: 0.3,
   },
 
   availabilityBadge: {
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 999,
+    borderRadius: Radius.full,
     borderWidth: 1,
   },
 
   availableBadge: {
-    backgroundColor: "rgba(34,197,94,0.12)",
-    borderColor: "rgba(34,197,94,0.35)",
+    backgroundColor: Colors.availableBg,
+    borderColor: Colors.availableBorder,
   },
 
   unavailableBadge: {
-    backgroundColor: "rgba(239,68,68,0.12)",
-    borderColor: "rgba(239,68,68,0.35)",
+    backgroundColor: Colors.soldOutBg,
+    borderColor: Colors.soldOutBorder,
   },
 
   availabilityText: {
-    fontSize: 12,
-    fontWeight: "700",
+    fontSize: 11,
+    fontFamily: Fonts.bodyBold,
+    letterSpacing: 0.3,
   },
 
   availableText: {
-    color: "#4ade80",
+    color: Colors.available,
   },
 
   unavailableText: {
-    color: "#f87171",
+    color: Colors.soldOut,
   },
 
   badgeRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: Spacing.sm,
     marginBottom: 18,
   },
 
   infoBadge: {
-    backgroundColor: "#1e293b",
+    backgroundColor: Colors.bgAlt,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: Colors.lineMid,
     paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 999,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
   },
 
   infoBadgeText: {
-    color: "#e2e8f0",
-    fontSize: 12,
-    fontWeight: "700",
+    color: Colors.goldLight,
+    fontSize: 11,
+    fontFamily: Fonts.bodyBold,
+    letterSpacing: 0.5,
   },
 
   priceBox: {
-    backgroundColor: "#0b1220",
-    borderRadius: 18,
-    padding: 16,
+    backgroundColor: Colors.bg,
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: Colors.line,
   },
 
   priceLabel: {
-    color: "#94a3b8",
-    fontSize: 13,
+    color: Colors.muted,
+    fontSize: 11,
+    fontFamily: Fonts.bodySemiBold,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
     marginBottom: 6,
   },
 
   price: {
-    color: "#f8fafc",
-    fontSize: 30,
-    fontWeight: "800",
+    color: Colors.goldLight,
+    fontSize: 42,
+    fontFamily: Fonts.display,
+    letterSpacing: 1,
   },
 
   section: {
-    marginBottom: 20,
+    marginBottom: Spacing.xl,
   },
 
   sectionTitle: {
-    color: "#ffffff",
-    fontSize: 22,
-    fontWeight: "800",
-    marginBottom: 12,
+    color: Colors.goldLight,
+    fontSize: 28,
+    fontFamily: Fonts.display,
+    letterSpacing: 1,
+    marginBottom: Spacing.md,
   },
 
   detailsCard: {
-    backgroundColor: "#111827",
-    borderRadius: 22,
-    padding: 16,
+    backgroundColor: Colors.card,
+    borderRadius: Radius.xxl,
+    padding: Spacing.lg,
     borderWidth: 1,
-    borderColor: "#1f2937",
+    borderColor: Colors.line,
   },
 
   detailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    gap: 16,
+    gap: Spacing.lg,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#1f2937",
+    borderBottomColor: Colors.line,
   },
 
   lastRow: {
@@ -424,53 +439,67 @@ const styles = StyleSheet.create({
   },
 
   detailLabel: {
-    color: "#94a3b8",
-    fontSize: 15,
+    color: Colors.muted,
+    fontSize: 14,
+    fontFamily: Fonts.body,
     flex: 1,
   },
 
   detailValue: {
-    color: "#f8fafc",
-    fontSize: 15,
-    fontWeight: "600",
+    color: Colors.text,
+    fontSize: 14,
+    fontFamily: Fonts.bodySemiBold,
     flexShrink: 1,
     textAlign: "right",
   },
 
   detailValueStrong: {
-    color: "#fbbf24",
-    fontSize: 17,
-    fontWeight: "800",
+    color: Colors.gold,
+    fontSize: 16,
+    fontFamily: Fonts.bodyExtraBold,
     flexShrink: 1,
     textAlign: "right",
   },
 
   statusCard: {
-    backgroundColor: "#111827",
-    borderRadius: 22,
-    padding: 16,
+    backgroundColor: Colors.card,
+    borderRadius: Radius.xxl,
+    padding: Spacing.lg,
     borderWidth: 1,
-    borderColor: "#1f2937",
+    borderColor: Colors.line,
   },
 
   statusPill: {
     alignSelf: "flex-start",
-    backgroundColor: "#1d4ed8",
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
+    paddingVertical: 7,
+    borderRadius: Radius.full,
     marginBottom: 12,
   },
 
+  statusPillAvailable: {
+    backgroundColor: Colors.availableBg,
+    borderWidth: 1,
+    borderColor: Colors.availableBorder,
+  },
+
+  statusPillSoldOut: {
+    backgroundColor: Colors.soldOutBg,
+    borderWidth: 1,
+    borderColor: Colors.soldOutBorder,
+  },
+
   statusPillText: {
-    color: "#ffffff",
-    fontSize: 13,
-    fontWeight: "700",
+    color: Colors.goldLight,
+    fontSize: 12,
+    fontFamily: Fonts.bodyBold,
+    letterSpacing: 0.3,
   },
 
   statusText: {
-    color: "#cbd5e1",
-    fontSize: 15,
+    color: Colors.muted,
+    fontSize: 14,
+    fontFamily: Fonts.body,
     lineHeight: 22,
   },
 
@@ -479,7 +508,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.94)",
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: Spacing.xl,
   },
 
   fullImage: {
@@ -493,12 +522,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     backgroundColor: "rgba(255,255,255,0.08)",
-    borderRadius: 999,
+    borderRadius: Radius.full,
   },
 
   closeHintText: {
-    color: "#e5e7eb",
+    color: Colors.text,
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: Fonts.bodySemiBold,
   },
 });

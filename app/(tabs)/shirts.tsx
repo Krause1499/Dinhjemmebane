@@ -1,5 +1,5 @@
-import { router, Stack } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -10,6 +10,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { Colors, Fonts, Radius, Spacing } from "../../theme";
 
 type Shirt = {
   id: number;
@@ -35,8 +36,7 @@ export default function ShirtsScreen() {
 
   const getAPIData = async () => {
     try {
-      const url = "https://dinhjemmebaneapi.runasp.net/api/shirts";
-      const response = await fetch(url);
+      const response = await fetch("https://dinhjemmebaneapi.runasp.net/api/shirts");
 
       if (!response.ok) {
         throw new Error(`Fejl ved API-kald: ${response.status}`);
@@ -64,220 +64,211 @@ export default function ShirtsScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#fbbf24" />
+        <ActivityIndicator size="large" color={Colors.gold} />
         <Text style={styles.loadingText}>Henter trøjer...</Text>
       </View>
     );
   }
 
   return (
-    <>
-      <Stack.Screen options={{ title: "Shirts" }} />
+    <FlatList
+      data={shirts}
+      keyExtractor={(item) => item.id.toString()}
+      contentContainerStyle={styles.list}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={Colors.gold}
+          colors={[Colors.gold]}
+        />
+      }
+      ListHeaderComponent={
+        <View style={styles.header}>
+          <Text style={styles.kicker}>KOLLEKTION</Text>
+          <Text style={styles.headerTitle}>Find din næste trøje</Text>
+          <Text style={styles.headerSubtitle}>
+            Klassiske og moderne fodboldtrøjer fra forskellige ligaer, sæsoner og størrelser.
+          </Text>
 
-      <FlatList
-        data={shirts}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fbbf24" />
-        }
-        ListHeaderComponent={
-          <View style={styles.header}>
-            <Text style={styles.kicker}>KOLLEKTION</Text>
-            <Text style={styles.headerTitle}>Find din næste trøje</Text>
-            <Text style={styles.headerSubtitle}>
-              Udforsk klassiske og moderne fodboldtrøjer fra forskellige ligaer,
-              sæsoner og størrelser.
-            </Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statCard}>
+              <Text style={styles.statNumber}>{shirts.length}</Text>
+              <Text style={styles.statLabel}>Trøjer i alt</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statNumber}>
+                {shirts.filter((s) => s.isAvailable).length}
+              </Text>
+              <Text style={styles.statLabel}>På lager</Text>
+            </View>
+          </View>
+        </View>
+      }
+      renderItem={({ item }) => (
+        <Pressable
+          style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+          onPress={() =>
+            router.push({
+              pathname: "/shirts/[id]",
+              params: { id: item.id.toString() },
+            })
+          }
+        >
+          {item.pictureUrl ? (
+            <Image source={{ uri: item.pictureUrl }} style={styles.image} />
+          ) : (
+            <View style={[styles.image, styles.imagePlaceholder]}>
+              <Text style={styles.imagePlaceholderText}>Ingen billede</Text>
+            </View>
+          )}
 
-            <View style={styles.statsRow}>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumber}>{shirts.length}</Text>
-                <Text style={styles.statLabel}>Trøjer</Text>
+          {!item.isAvailable && (
+            <View style={styles.soldOutOverlay}>
+              <Text style={styles.soldOutText}>UDSOLGT</Text>
+            </View>
+          )}
+
+          <View style={styles.cardContent}>
+            <View style={styles.topRow}>
+              <View style={styles.titleBlock}>
+                <Text style={styles.league}>{item.league}</Text>
+                <Text style={styles.title}>{item.team}</Text>
+                <Text style={styles.season}>{item.season}</Text>
               </View>
 
-              <View style={styles.statCard}>
-                <Text style={styles.statNumber}>
-                  {shirts.filter((shirt) => shirt.isAvailable).length}
+              <View style={[
+                styles.availabilityBadge,
+                item.isAvailable ? styles.availableBadge : styles.unavailableBadge,
+              ]}>
+                <Text style={[
+                  styles.availabilityText,
+                  item.isAvailable ? styles.availableText : styles.unavailableText,
+                ]}>
+                  {item.isAvailable ? "På lager" : "Udsolgt"}
                 </Text>
-                <Text style={styles.statLabel}>Tilgængelige</Text>
+              </View>
+            </View>
+
+            <View style={styles.badgeRow}>
+              <View style={styles.infoBadge}>
+                <Text style={styles.infoBadgeText}>Str. {item.size}</Text>
+              </View>
+              <View style={styles.infoBadge}>
+                <Text style={styles.infoBadgeText}>{item.quality}</Text>
+              </View>
+              <View style={styles.infoBadge}>
+                <Text style={styles.infoBadgeText}>
+                  {item.hasSleeves ? "Med ærmer" : "Uden ærmer"}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.bottomRow}>
+              <View>
+                <Text style={styles.priceLabel}>Pris inkl. moms</Text>
+                <Text style={styles.price}>{item.priceWithVAT} kr.</Text>
+              </View>
+              <View style={styles.ctaPill}>
+                <Text style={styles.ctaPillText}>Se detaljer →</Text>
               </View>
             </View>
           </View>
-        }
-        renderItem={({ item }) => (
-          <Pressable
-            style={({ pressed }) => [
-              styles.card,
-              pressed && styles.cardPressed,
-            ]}
-            onPress={() =>
-              router.push({
-                pathname: "/shirts/[id]",
-                params: { id: item.id.toString() },
-              })
-            }
-          >
-            {item.pictureUrl ? (
-              <Image source={{ uri: item.pictureUrl }} style={styles.image} />
-            ) : (
-              <View style={[styles.image, styles.imagePlaceholder]}>
-                <Text style={styles.imagePlaceholderText}>Ingen billede</Text>
-              </View>
-            )}
-
-            <View style={styles.cardContent}>
-              <View style={styles.topRow}>
-                <View style={styles.titleBlock}>
-                  <Text style={styles.title}>{item.team}</Text>
-                  <Text style={styles.season}>{item.season}</Text>
-                </View>
-
-                <View
-                  style={[
-                    styles.availabilityBadge,
-                    item.isAvailable
-                      ? styles.availableBadge
-                      : styles.unavailableBadge,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.availabilityText,
-                      item.isAvailable
-                        ? styles.availableText
-                        : styles.unavailableText,
-                    ]}
-                  >
-                    {item.isAvailable ? "På lager" : "Udsolgt"}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.badgeRow}>
-                <View style={styles.infoBadge}>
-                  <Text style={styles.infoBadgeText}>{item.league}</Text>
-                </View>
-
-                <View style={styles.infoBadge}>
-                  <Text style={styles.infoBadgeText}>Str. {item.size}</Text>
-                </View>
-
-                <View style={styles.infoBadge}>
-                  <Text style={styles.infoBadgeText}>{item.quality}</Text>
-                </View>
-              </View>
-
-              <View style={styles.metaRow}>
-                <Text style={styles.metaText}>
-                  Ærmer: {item.hasSleeves ? "Ja" : "Nej"}
-                </Text>
-                <Text style={styles.metaText}>
-                  Tryk: {item.isPrinted ? "Ja" : "Nej"}
-                </Text>
-              </View>
-
-              <View style={styles.bottomRow}>
-                <View>
-                  <Text style={styles.priceLabel}>Pris inkl. moms</Text>
-                  <Text style={styles.price}>{item.priceWithVAT} kr.</Text>
-                </View>
-
-                <View style={styles.ctaPill}>
-                  <Text style={styles.ctaPillText}>Se detaljer</Text>
-                </View>
-              </View>
-            </View>
-          </Pressable>
-        )}
-      />
-    </>
+        </Pressable>
+      )}
+    />
   );
 }
 
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    backgroundColor: "#0f172a",
+    backgroundColor: Colors.bg,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: Spacing.xl,
   },
 
   loadingText: {
-    color: "#e5e7eb",
-    marginTop: 12,
+    color: Colors.text,
+    marginTop: Spacing.md,
     fontSize: 16,
+    fontFamily: Fonts.body,
   },
 
   list: {
-    padding: 16,
-    paddingBottom: 28,
-    backgroundColor: "#0f172a",
+    padding: Spacing.lg,
+    paddingBottom: 32,
+    backgroundColor: Colors.bg,
   },
 
   header: {
-    marginBottom: 20,
-    paddingTop: 4,
+    marginBottom: Spacing.xl,
+    paddingTop: Spacing.sm,
   },
 
   kicker: {
-    color: "#fbbf24",
-    fontSize: 12,
-    fontWeight: "700",
-    letterSpacing: 1.5,
-    marginBottom: 10,
+    color: Colors.gold,
+    fontSize: 11,
+    fontFamily: Fonts.bodyBold,
+    letterSpacing: 2,
+    marginBottom: 8,
   },
 
   headerTitle: {
-    color: "#ffffff",
-    fontSize: 30,
-    fontWeight: "800",
-    marginBottom: 10,
+    color: Colors.goldLight,
+    fontSize: 38,
+    fontFamily: Fonts.display,
+    letterSpacing: 0.5,
+    marginBottom: 8,
   },
 
   headerSubtitle: {
-    color: "#cbd5e1",
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 18,
+    color: Colors.muted,
+    fontSize: 14,
+    fontFamily: Fonts.body,
+    lineHeight: 21,
+    marginBottom: Spacing.lg,
   },
 
   statsRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: Spacing.md,
   },
 
   statCard: {
     flex: 1,
-    backgroundColor: "#1e293b",
-    borderRadius: 18,
-    padding: 16,
+    backgroundColor: Colors.card,
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: Colors.line,
   },
 
   statNumber: {
-    color: "#ffffff",
-    fontSize: 24,
-    fontWeight: "800",
+    color: Colors.goldLight,
+    fontSize: 28,
+    fontFamily: Fonts.display,
+    letterSpacing: 0.5,
     marginBottom: 4,
   },
 
   statLabel: {
-    color: "#94a3b8",
-    fontSize: 13,
-    fontWeight: "600",
+    color: Colors.muted,
+    fontSize: 12,
+    fontFamily: Fonts.bodySemiBold,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
 
   card: {
-    backgroundColor: "#111827",
-    borderRadius: 22,
+    backgroundColor: Colors.card,
+    borderRadius: Radius.xxl,
     marginBottom: 18,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#1f2937",
+    borderColor: Colors.line,
   },
 
   cardPressed: {
@@ -289,7 +280,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 220,
     resizeMode: "contain",
-    backgroundColor: "#0b1220",
+    backgroundColor: Colors.bgAlt,
   },
 
   imagePlaceholder: {
@@ -298,101 +289,120 @@ const styles = StyleSheet.create({
   },
 
   imagePlaceholderText: {
-    color: "#64748b",
+    color: Colors.muted,
     fontSize: 14,
+    fontFamily: Fonts.body,
+  },
+
+  soldOutOverlay: {
+    position: "absolute",
+    top: 10,
+    left: 10,
+    backgroundColor: Colors.soldOutBg,
+    borderWidth: 1,
+    borderColor: Colors.soldOutBorder,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: Radius.sm,
+  },
+
+  soldOutText: {
+    color: Colors.soldOut,
+    fontSize: 10,
+    fontFamily: Fonts.bodyExtraBold,
+    letterSpacing: 1,
   },
 
   cardContent: {
-    padding: 16,
+    padding: Spacing.lg,
   },
 
   topRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    gap: 12,
-    marginBottom: 14,
+    gap: Spacing.md,
+    marginBottom: Spacing.md,
   },
 
   titleBlock: {
     flex: 1,
   },
 
-  title: {
-    color: "#ffffff",
-    fontSize: 22,
-    fontWeight: "800",
+  league: {
+    color: Colors.gold,
+    fontSize: 10,
+    fontFamily: Fonts.bodyBold,
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
     marginBottom: 4,
   },
 
+  title: {
+    color: Colors.goldLight,
+    fontSize: 26,
+    fontFamily: Fonts.display,
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+
   season: {
-    color: "#94a3b8",
-    fontSize: 15,
-    fontWeight: "600",
+    color: Colors.muted,
+    fontSize: 13,
+    fontFamily: Fonts.bodySemiBold,
   },
 
   availabilityBadge: {
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 999,
+    borderRadius: Radius.full,
     borderWidth: 1,
   },
 
   availableBadge: {
-    backgroundColor: "rgba(34,197,94,0.12)",
-    borderColor: "rgba(34,197,94,0.35)",
+    backgroundColor: Colors.availableBg,
+    borderColor: Colors.availableBorder,
   },
 
   unavailableBadge: {
-    backgroundColor: "rgba(239,68,68,0.12)",
-    borderColor: "rgba(239,68,68,0.35)",
+    backgroundColor: Colors.soldOutBg,
+    borderColor: Colors.soldOutBorder,
   },
 
   availabilityText: {
-    fontSize: 12,
-    fontWeight: "700",
+    fontSize: 11,
+    fontFamily: Fonts.bodyBold,
   },
 
   availableText: {
-    color: "#4ade80",
+    color: Colors.available,
   },
 
   unavailableText: {
-    color: "#f87171",
+    color: Colors.soldOut,
   },
 
   badgeRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 14,
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
   },
 
   infoBadge: {
-    backgroundColor: "#1e293b",
+    backgroundColor: Colors.bg,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: Colors.lineMid,
     paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 999,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
   },
 
   infoBadgeText: {
-    color: "#e2e8f0",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-
-  metaRow: {
-    flexDirection: "row",
-    gap: 16,
-    marginBottom: 16,
-  },
-
-  metaText: {
-    color: "#94a3b8",
-    fontSize: 13,
-    fontWeight: "500",
+    color: Colors.goldLight,
+    fontSize: 11,
+    fontFamily: Fonts.bodyBold,
+    letterSpacing: 0.3,
   },
 
   bottomRow: {
@@ -402,27 +412,34 @@ const styles = StyleSheet.create({
   },
 
   priceLabel: {
-    color: "#94a3b8",
-    fontSize: 12,
+    color: Colors.muted,
+    fontSize: 11,
+    fontFamily: Fonts.body,
+    letterSpacing: 0.3,
+    textTransform: "uppercase",
     marginBottom: 4,
   },
 
   price: {
-    color: "#f8fafc",
-    fontSize: 24,
-    fontWeight: "800",
+    color: Colors.goldLight,
+    fontSize: 28,
+    fontFamily: Fonts.display,
+    letterSpacing: 0.5,
   },
 
   ctaPill: {
-    backgroundColor: "#2563eb",
+    backgroundColor: Colors.navyBtn,
+    borderWidth: 1,
+    borderColor: Colors.lineMid,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 999,
+    borderRadius: Radius.full,
   },
 
   ctaPillText: {
-    color: "#ffffff",
-    fontSize: 13,
-    fontWeight: "700",
+    color: Colors.goldLight,
+    fontSize: 12,
+    fontFamily: Fonts.bodyBold,
+    letterSpacing: 0.3,
   },
 });
