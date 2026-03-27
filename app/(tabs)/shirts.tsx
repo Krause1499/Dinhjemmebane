@@ -8,6 +8,7 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { Colors, Fonts, Radius, Spacing } from "../../theme";
@@ -29,10 +30,14 @@ type Shirt = {
   images: unknown[];
 };
 
+const NUM_COLUMNS = 2;
+
 export default function ShirtsScreen() {
   const [shirts, setShirts] = useState<Shirt[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const { width } = useWindowDimensions();
+  const cardWidth = (width - Spacing.lg * 2 - Spacing.md) / NUM_COLUMNS;
 
   const getAPIData = async () => {
     try {
@@ -74,6 +79,8 @@ export default function ShirtsScreen() {
     <FlatList
       data={shirts}
       keyExtractor={(item) => item.id.toString()}
+      numColumns={NUM_COLUMNS}
+      columnWrapperStyle={styles.columnWrapper}
       contentContainerStyle={styles.list}
       showsVerticalScrollIndicator={false}
       refreshControl={
@@ -108,7 +115,7 @@ export default function ShirtsScreen() {
       }
       renderItem={({ item }) => (
         <Pressable
-          style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+          style={({ pressed }) => [styles.card, { width: cardWidth }, pressed && styles.cardPressed]}
           onPress={() =>
             router.push({
               pathname: "/shirts/[id]",
@@ -131,19 +138,20 @@ export default function ShirtsScreen() {
           )}
 
           <View style={styles.cardContent}>
-            <View style={styles.topRow}>
-              <View style={styles.titleBlock}>
-                <Text style={styles.league}>{item.league}</Text>
-                <Text style={styles.title}>{item.team}</Text>
-                <Text style={styles.season}>{item.season}</Text>
-              </View>
+            <Text style={styles.league}>{item.league}</Text>
+            <Text style={styles.title} numberOfLines={1}>{item.team}</Text>
+            <Text style={styles.season}>{item.season}</Text>
 
+            <View style={styles.badgeRow}>
+              <View style={styles.infoBadge}>
+                <Text style={styles.infoBadgeText}>Str. {item.size}</Text>
+              </View>
               <View style={[
-                styles.availabilityBadge,
+                styles.infoBadge,
                 item.isAvailable ? styles.availableBadge : styles.unavailableBadge,
               ]}>
                 <Text style={[
-                  styles.availabilityText,
+                  styles.infoBadgeText,
                   item.isAvailable ? styles.availableText : styles.unavailableText,
                 ]}>
                   {item.isAvailable ? "På lager" : "Udsolgt"}
@@ -151,29 +159,7 @@ export default function ShirtsScreen() {
               </View>
             </View>
 
-            <View style={styles.badgeRow}>
-              <View style={styles.infoBadge}>
-                <Text style={styles.infoBadgeText}>Str. {item.size}</Text>
-              </View>
-              <View style={styles.infoBadge}>
-                <Text style={styles.infoBadgeText}>{item.quality}</Text>
-              </View>
-              <View style={styles.infoBadge}>
-                <Text style={styles.infoBadgeText}>
-                  {item.hasSleeves ? "Med ærmer" : "Uden ærmer"}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.bottomRow}>
-              <View>
-                <Text style={styles.priceLabel}>Pris inkl. moms</Text>
-                <Text style={styles.price}>{item.priceWithVAT} kr.</Text>
-              </View>
-              <View style={styles.ctaPill}>
-                <Text style={styles.ctaPillText}>Se detaljer →</Text>
-              </View>
-            </View>
+            <Text style={styles.price}>{item.priceWithVAT} kr.</Text>
           </View>
         </Pressable>
       )}
@@ -201,6 +187,10 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     paddingBottom: 32,
     backgroundColor: Colors.bg,
+  },
+
+  columnWrapper: {
+    gap: Spacing.md,
   },
 
   header: {
@@ -264,8 +254,8 @@ const styles = StyleSheet.create({
 
   card: {
     backgroundColor: Colors.card,
-    borderRadius: Radius.xxl,
-    marginBottom: 18,
+    borderRadius: Radius.xl,
+    marginBottom: Spacing.md,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: Colors.line,
@@ -278,7 +268,7 @@ const styles = StyleSheet.create({
 
   image: {
     width: "100%",
-    height: 220,
+    height: 140,
     resizeMode: "contain",
     backgroundColor: Colors.bgAlt,
   },
@@ -314,49 +304,31 @@ const styles = StyleSheet.create({
   },
 
   cardContent: {
-    padding: Spacing.lg,
-  },
-
-  topRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: Spacing.md,
-    marginBottom: Spacing.md,
-  },
-
-  titleBlock: {
-    flex: 1,
+    padding: Spacing.md,
   },
 
   league: {
     color: Colors.gold,
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: Fonts.bodyBold,
     letterSpacing: 1.5,
     textTransform: "uppercase",
-    marginBottom: 4,
+    marginBottom: 2,
   },
 
   title: {
     color: Colors.goldLight,
-    fontSize: 26,
+    fontSize: 15,
     fontFamily: Fonts.display,
-    letterSpacing: 0.5,
-    marginBottom: 2,
+    letterSpacing: 0.3,
+    marginBottom: 1,
   },
 
   season: {
     color: Colors.muted,
-    fontSize: 13,
+    fontSize: 11,
     fontFamily: Fonts.bodySemiBold,
-  },
-
-  availabilityBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: Radius.full,
-    borderWidth: 1,
+    marginBottom: Spacing.sm,
   },
 
   availableBadge: {
@@ -367,11 +339,6 @@ const styles = StyleSheet.create({
   unavailableBadge: {
     backgroundColor: Colors.soldOutBg,
     borderColor: Colors.soldOutBorder,
-  },
-
-  availabilityText: {
-    fontSize: 11,
-    fontFamily: Fonts.bodyBold,
   },
 
   availableText: {
@@ -385,61 +352,30 @@ const styles = StyleSheet.create({
   badgeRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: Spacing.sm,
-    marginBottom: Spacing.md,
+    gap: 4,
+    marginBottom: Spacing.sm,
   },
 
   infoBadge: {
     backgroundColor: Colors.bg,
     borderWidth: 1,
     borderColor: Colors.lineMid,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: Radius.full,
   },
 
   infoBadgeText: {
     color: Colors.goldLight,
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: Fonts.bodyBold,
-    letterSpacing: 0.3,
-  },
-
-  bottomRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
-  priceLabel: {
-    color: Colors.muted,
-    fontSize: 11,
-    fontFamily: Fonts.body,
-    letterSpacing: 0.3,
-    textTransform: "uppercase",
-    marginBottom: 4,
+    letterSpacing: 0.2,
   },
 
   price: {
     color: Colors.goldLight,
-    fontSize: 28,
+    fontSize: 17,
     fontFamily: Fonts.display,
-    letterSpacing: 0.5,
-  },
-
-  ctaPill: {
-    backgroundColor: Colors.navyBtn,
-    borderWidth: 1,
-    borderColor: Colors.lineMid,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: Radius.full,
-  },
-
-  ctaPillText: {
-    color: Colors.goldLight,
-    fontSize: 12,
-    fontFamily: Fonts.bodyBold,
     letterSpacing: 0.3,
   },
 });

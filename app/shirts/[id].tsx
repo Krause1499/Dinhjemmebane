@@ -1,3 +1,4 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -10,6 +11,7 @@ import {
     Text,
     View,
 } from "react-native";
+import { useCart } from "../../context/CartContext";
 import { Colors, Fonts, Radius, Spacing } from "../../theme";
 
 type Shirt = {
@@ -31,6 +33,7 @@ type Shirt = {
 
 export default function ShirtDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { addToCart, isInCart } = useCart();
 
   const [shirt, setShirt] = useState<Shirt | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,6 +83,22 @@ export default function ShirtDetailsScreen() {
     );
   }
 
+  const inCart = isInCart(shirt.id);
+
+  function handleAddToCart() {
+    if (!shirt.isAvailable || inCart) return;
+    addToCart({
+      id: shirt.id,
+      name: `${shirt.team} ${shirt.season}`,
+      team: shirt.team,
+      season: shirt.season,
+      league: shirt.league,
+      size: shirt.size,
+      price: shirt.priceWithVAT,
+      pictureUrl: shirt.pictureUrl ?? null,
+    });
+  }
+
   return (
     <>
       <Stack.Screen
@@ -88,8 +107,8 @@ export default function ShirtDetailsScreen() {
         }}
       />
 
+      <View style={styles.screen}>
       <ScrollView
-        style={styles.screen}
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
@@ -227,6 +246,28 @@ export default function ShirtDetailsScreen() {
         </View>
       </ScrollView>
 
+      <View style={styles.cartFooter}>
+        {!shirt.isAvailable ? (
+          <View style={[styles.cartBtn, styles.cartBtnSoldOut]}>
+            <Text style={styles.cartBtnText}>Udsolgt</Text>
+          </View>
+        ) : inCart ? (
+          <View style={[styles.cartBtn, styles.cartBtnInCart]}>
+            <Ionicons name="checkmark" size={18} color={Colors.available} />
+            <Text style={[styles.cartBtnText, { color: Colors.available }]}>Lagt i kurven</Text>
+          </View>
+        ) : (
+          <Pressable
+            style={({ pressed }) => [styles.cartBtn, styles.cartBtnActive, pressed && { opacity: 0.85 }]}
+            onPress={handleAddToCart}
+          >
+            <Ionicons name="cart-outline" size={18} color={Colors.navy} />
+            <Text style={styles.cartBtnText}>Læg i kurv</Text>
+          </Pressable>
+        )}
+      </View>
+      </View>
+
       <Modal visible={imageOpen} transparent animationType="fade">
         <Pressable style={styles.modalContainer} onPress={() => setImageOpen(false)}>
           {shirt.pictureUrl ? (
@@ -246,6 +287,46 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: Colors.bg,
+  },
+
+  cartFooter: {
+    padding: Spacing.lg,
+    paddingBottom: Spacing.xl,
+    backgroundColor: Colors.headerBg,
+    borderTopWidth: 1,
+    borderTopColor: Colors.line,
+  },
+
+  cartBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 15,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+  },
+
+  cartBtnActive: {
+    backgroundColor: Colors.gold,
+    borderColor: Colors.gold,
+  },
+
+  cartBtnInCart: {
+    backgroundColor: Colors.availableBg,
+    borderColor: Colors.availableBorder,
+  },
+
+  cartBtnSoldOut: {
+    backgroundColor: Colors.soldOutBg,
+    borderColor: Colors.soldOutBorder,
+  },
+
+  cartBtnText: {
+    fontSize: 15,
+    fontFamily: Fonts.bodyExtraBold,
+    letterSpacing: 0.3,
+    color: Colors.navy,
   },
 
   container: {

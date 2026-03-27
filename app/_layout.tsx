@@ -11,6 +11,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { AuthProvider } from "../context/AuthContext";
+import { CartProvider } from "../context/CartContext";
 import { Colors } from "../theme";
 
 SplashScreen.preventAutoHideAsync();
@@ -38,6 +39,7 @@ export default function RootLayout() {
   }
 
   return (
+    <CartProvider>
     <AuthProvider>
       <Stack
         screenOptions={{
@@ -65,5 +67,6 @@ export default function RootLayout() {
         />
       </Stack>
     </AuthProvider>
+    </CartProvider>
   );
 }
