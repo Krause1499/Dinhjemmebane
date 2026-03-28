@@ -65,6 +65,27 @@ export default function RootLayout() {
             presentation: "card",
           }}
         />
+        <Stack.Screen
+          name="checkout"
+          options={{
+            title: "Checkout",
+            presentation: "card",
+          }}
+        />
+        <Stack.Screen
+          name="payment"
+          options={{
+            title: "Betaling",
+            presentation: "card",
+          }}
+        />
+        <Stack.Screen
+          name="order-success"
+          options={{
+            headerShown: false,
+            presentation: "card",
+          }}
+        />
       </Stack>
     </AuthProvider>
     </CartProvider>

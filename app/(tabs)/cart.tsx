@@ -257,7 +257,7 @@ export default function CartScreen() {
             ]}
             onPress={() => {
               if (hasUnavailable) return;
-              Alert.alert("Betaling", "Betalingsflow er ikke implementeret i appen endnu.");
+              router.push("/checkout");
             }}
           >
             <Text style={styles.checkoutBtnText}>Gå til betaling →</Text>
