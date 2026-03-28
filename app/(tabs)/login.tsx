@@ -152,7 +152,7 @@ function MinKontoScreen() {
           </Text>
           <Pressable
             style={({ pressed }) => [styles.emptyBtn, pressed && { opacity: 0.8 }]}
-            onPress={() => router.push("/shirts")}
+            onPress={() => router.push("/shop")}
           >
             <Text style={styles.emptyBtnText}>Se trøjer →</Text>
           </Pressable>
@@ -366,12 +366,6 @@ export default function AccountTab() {
 
           {/* Panel */}
           <View style={styles.panel}>
-            <View style={styles.logoRow}>
-              <View style={styles.logoCircle}>
-                <Text style={styles.logoMark}>DH</Text>
-              </View>
-              <Text style={styles.logoText}>Din Hjemmebane</Text>
-            </View>
             <Text style={styles.panelHeading}>
               {step === "password" ? "Log ind på din konto" : "Bekræft din identitet"}
             </Text>

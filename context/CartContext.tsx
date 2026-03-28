@@ -6,12 +6,13 @@ import { createContext, useContext, useEffect, useReducer, type ReactNode } from
 export type CartItem = {
   id: number;
   name: string;
-  team: string;
-  season: string;
-  league: string;
+  team?: string;
+  season?: string;
+  league?: string;
   size: string;
   price: number;
   pictureUrl: string | null;
+  itemType?: 'shirt' | 'mysterybox';
 };
 
 type CartState = { items: CartItem[] };

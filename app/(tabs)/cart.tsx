@@ -31,12 +31,15 @@ export default function CartScreen() {
       abortRef.current = controller;
 
       Promise.all(
-        items.map((item) =>
-          fetch(`${API}/shirts/${item.id}`, { signal: controller.signal })
+        items.map((item) => {
+          const endpoint = item.itemType === 'mysterybox'
+            ? `${API}/mysterybox/${item.id}`
+            : `${API}/shirts/${item.id}`;
+          return fetch(endpoint, { signal: controller.signal })
             .then((r) => r.json())
             .then((data) => ({ id: item.id, isAvailable: data.isAvailable as boolean }))
-            .catch(() => null)
-        )
+            .catch(() => null);
+        })
       ).then((results) => {
         const ids = new Set<number>();
         for (const r of results) {
@@ -55,9 +58,10 @@ export default function CartScreen() {
   const remaining = FREE_SHIPPING_THRESHOLD - total;
 
   function handleRemove(item: CartItem) {
+    const label = item.itemType === 'mysterybox' ? item.name : `${item.team} ${item.season}`;
     Alert.alert(
       "Fjern fra kurv",
-      `Vil du fjerne "${item.team} ${item.season}" fra kurven?`,
+      `Vil du fjerne "${label}" fra kurven?`,
       [
         { text: "Annuller", style: "cancel" },
         { text: "Fjern", style: "destructive", onPress: () => removeFromCart(item.id) },
@@ -82,7 +86,7 @@ export default function CartScreen() {
         </Text>
         <Pressable
           style={({ pressed }) => [styles.shopBtn, pressed && { opacity: 0.8 }]}
-          onPress={() => router.push("/(tabs)/shirts")}
+          onPress={() => router.push("/(tabs)/shop")}
         >
           <Text style={styles.shopBtnText}>Se trøjer</Text>
         </Pressable>
@@ -94,6 +98,7 @@ export default function CartScreen() {
     <FlatList
       data={items}
       keyExtractor={(item) => item.id.toString()}
+      style={styles.flatList}
       contentContainerStyle={styles.list}
       showsVerticalScrollIndicator={false}
       ListHeaderComponent={
@@ -145,7 +150,10 @@ export default function CartScreen() {
               />
             ) : (
               <View style={[styles.image, styles.imagePlaceholder]}>
-                <Ionicons name="shirt-outline" size={28} color={Colors.muted} />
+                {item.itemType === 'mysterybox'
+                  ? <Text style={{ fontSize: 32 }}>📦</Text>
+                  : <Ionicons name="shirt-outline" size={28} color={Colors.muted} />
+                }
               </View>
             )}
 
@@ -159,11 +167,18 @@ export default function CartScreen() {
 
               <View style={styles.cardTop}>
                 <View style={styles.cardInfo}>
-                  <Text style={styles.cardLeague}>{item.league}</Text>
-                  <Text style={styles.cardName} numberOfLines={1}>
-                    {item.team}
-                  </Text>
-                  <Text style={styles.cardSeason}>{item.season}</Text>
+                  {item.itemType === 'mysterybox' ? (
+                    <>
+                      <Text style={styles.cardLeague}>MYSTERY BOX</Text>
+                      <Text style={styles.cardName} numberOfLines={1}>{item.name}</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={styles.cardLeague}>{item.league}</Text>
+                      <Text style={styles.cardName} numberOfLines={1}>{item.team}</Text>
+                      <Text style={styles.cardSeason}>{item.season}</Text>
+                    </>
+                  )}
                 </View>
 
                 <Pressable
@@ -254,6 +269,11 @@ export default function CartScreen() {
 }
 
 const styles = StyleSheet.create({
+  flatList: {
+    flex: 1,
+    backgroundColor: Colors.bg,
+  },
+
   list: {
     padding: Spacing.lg,
     paddingBottom: 40,

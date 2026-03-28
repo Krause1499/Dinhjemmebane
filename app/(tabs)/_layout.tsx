@@ -1,6 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Tabs } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../context/AuthContext";
 import { useCart } from "../../context/CartContext";
 import { Colors, Fonts, Radius } from "../../theme";
@@ -43,6 +44,7 @@ const badgeStyles = StyleSheet.create({
 export default function TabLayout() {
   const { user } = useAuth();
   return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.headerBg, paddingTop: 10 }} edges={["top"]}>
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors.gold,
@@ -66,6 +68,7 @@ export default function TabLayout() {
           fontFamily: Fonts.bodyBold,
           fontSize: 16,
         },
+        headerShown: false,
       }}
     >
       <Tabs.Screen
@@ -78,9 +81,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="shirts"
+        name="shop"
         options={{
-          title: "Trøjer",
+          title: "Shop",
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? "shirt" : "shirt-outline"} color={color} size={24} />
           ),
@@ -118,5 +121,6 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </SafeAreaView>
   );
 }
