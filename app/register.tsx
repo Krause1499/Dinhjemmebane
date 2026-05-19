@@ -3,17 +3,16 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  View,
+  View
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors, Fonts, Radius, Spacing } from "../theme";
 
-const API = "https://dinhjemmebaneapi.runasp.net/api";
+const API = "https://api.dinhjemmebane.dk/api";
 
 // ─── Adgangskoderegler (matcher hjemmesiden) ──────────────────────────────────
 

@@ -2,14 +2,14 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Image,
-    Modal,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  Image,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { useCart } from "../../context/CartContext";
 import { Colors, Fonts, Radius, Spacing } from "../../theme";
@@ -44,7 +44,7 @@ export default function ShirtDetailsScreen() {
       setLoading(true);
 
       const response = await fetch(
-        `https://dinhjemmebaneapi.runasp.net/api/shirts/${id}`
+        `https://api.dinhjemmebane.dk/api/shirts/${id}`
       );
 
       if (!response.ok) {

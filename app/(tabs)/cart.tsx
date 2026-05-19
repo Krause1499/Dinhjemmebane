@@ -15,7 +15,7 @@ import { Colors, Fonts, Radius, Spacing } from "../../theme";
 
 const FREE_SHIPPING_THRESHOLD = 499;
 const SHIPPING_COST = 49;
-const API = "https://dinhjemmebaneapi.runasp.net/api";
+const API = "https://api.dinhjemmebane.dk/api";
 
 export default function CartScreen() {
   const { items, itemCount, total, removeFromCart, clearCart } = useCart();

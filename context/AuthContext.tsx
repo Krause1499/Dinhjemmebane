@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useState } from "react";
 
-const API = "https://dinhjemmebaneapi.runasp.net/api";
+const API = "https://api.dinhjemmebane.dk/api";
 
 // ─── Typer ───────────────────────────────────────────────────────────────────
 

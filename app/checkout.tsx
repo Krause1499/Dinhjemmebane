@@ -12,7 +12,7 @@ import {
 import { useCart } from "../context/CartContext";
 import { Colors, Fonts, Radius, Spacing } from "../theme";
 
-const API = "https://dinhjemmebaneapi.runasp.net/api";
+const API = "https://api.dinhjemmebane.dk/api";
 
 type Form = {
   firstName: string;

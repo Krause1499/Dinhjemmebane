@@ -5,7 +5,7 @@ import WebView, { type WebViewMessageEvent } from "react-native-webview";
 import { useCart } from "../context/CartContext";
 import { Colors } from "../theme";
 
-const API = "https://dinhjemmebaneapi.runasp.net/api";
+const API = "https://api.dinhjemmebane.dk/api";
 
 export default function PaymentScreen() {
   const { sessionId, orderHandle } = useLocalSearchParams<{

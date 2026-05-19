@@ -17,7 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../context/AuthContext";
 import { Colors, Fonts, Radius, Spacing } from "../../theme";
 
-const API = "https://dinhjemmebaneapi.runasp.net/api";
+const API = "https://api.dinhjemmebane.dk/api";
 
 // ─── Typer ───────────────────────────────────────────────────────────────────
 

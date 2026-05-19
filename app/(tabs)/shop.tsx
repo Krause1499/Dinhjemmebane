@@ -1,17 +1,17 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Image,
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    useWindowDimensions,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import { useCart } from "../../context/CartContext";
 import { Colors, Fonts, Radius, Spacing } from "../../theme";
@@ -116,7 +116,7 @@ export default function ShopScreen() {
 
   const fetchShirts = async () => {
     try {
-      const response = await fetch("https://dinhjemmebaneapi.runasp.net/api/shirts");
+      const response = await fetch("https://api.dinhjemmebane.dk/api/shirts");
       if (!response.ok) throw new Error(`Fejl ved API-kald: ${response.status}`);
       const result: Shirt[] = await response.json();
       setShirts(result);
@@ -132,7 +132,7 @@ export default function ShopScreen() {
     if (isRefresh) setMysteryRefreshing(true);
     else setMysteryLoading(true);
     try {
-      const response = await fetch("https://dinhjemmebaneapi.runasp.net/api/mysterybox");
+      const response = await fetch("https://api.dinhjemmebane.dk//api/mysterybox");
       if (!response.ok) throw new Error(`Fejl ved API-kald: ${response.status}`);
       const result: MysteryBox[] = await response.json();
       setMysteryBoxes(result);
